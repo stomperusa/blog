@@ -1,4 +1,4 @@
-baseurl = "http://www.stomperusa.com"
+baseurl = "https://www.stomperusa.com"
 title = "exploRations in R"
 author = "stomperusa"
 canonifyurls = true
