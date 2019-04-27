@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R on exploRations in R</title>
+    <link>/categories/r/</link>
+    <description>Recent content in R on exploRations in R</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 23 Apr 2019 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/r/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Revisiting Weather Impact on Uber Pickups in NYC</title>
+      <link>/2019/04/23/revisiting-weather-impact-on-uber-pickups-in-nyc/</link>
+      <pubDate>Tue, 23 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/04/23/revisiting-weather-impact-on-uber-pickups-in-nyc/</guid>
+      <description>Intro A friend had asked how I would approach using a regression model in R on this data set to determine if weather has any impact on Uber usage in New York City. I was intrigued to know the result and thought this would make a good first blog post. A call out to Yannis Pappas for making this dataset available. http://www.yannispappas.com/Exploring-Uber-Demand/
+To recap, Yannis compiled the Uber Pickup data from the first 6 months of 2015 (from Kaggle), weather data from the National Centers for Environmental Information, LocationID to Borough mapping (by FiveThirtyEight) and NYC public holidays.</description>
+    </item>
+    
+  </channel>
+</rss>
