@@ -1,4 +1,4 @@
-baseurl = "https://www.stomperusa.com"
+baseurl = "https://www.stomperusa.com/"
 title = "exploRations in R"
 author = "stomperusa"
 canonifyurls = true
@@ -13,6 +13,8 @@ pygmentsstyle      = "vs"
 pygmentscodefences = true
 
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+
+rssLimit = 1
 
 [params]
   sitename = "exploRations"
@@ -34,5 +36,5 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 #    weight = 4
 [[menu.main]]
     name = "RSS"
-    url = "/index.xml"
+    url = "/themes/hugo-tanka/layouts/rss.xml"
     weight = 5
