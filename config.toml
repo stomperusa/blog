@@ -36,5 +36,5 @@ rssLimit = 1
 #    weight = 4
 [[menu.main]]
     name = "RSS"
-    url = "/themes/hugo-tanka/layouts/rss.xml"
+    url = "/index.xml"
     weight = 5
