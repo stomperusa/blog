@@ -6,7 +6,7 @@ languagecode = "en"
 theme = "hugo-tanka"
 
 googleAnalytics = ""
-disqusShortname = ""
+disqusShortname = "explorations-in-r"
 disable_mathjax = false
 
 pygmentsstyle      = "vs"
