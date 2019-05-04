@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on exploRations in R</title>
@@ -6,10 +5,146 @@
     <description>Recent content in Posts on exploRations in R</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 23 Apr 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 04 May 2019 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+        <atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>R Visualizations for Supplier Risk Management nth Parties</title>
+      <link>/2019/05/04/r-visualizations-for-supplier-risk-management-nth-parties/</link>
+      <pubDate>Sat, 04 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/05/04/r-visualizations-for-supplier-risk-management-nth-parties/</guid>
+      <description>
+
+
+&lt;hr /&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
+library(readr)
+library(ggplot2)
+library(igraph)
+library(ggraph)
+library(viridisLite)
+library(RColorBrewer)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;imported_data &amp;lt;- read_csv(&amp;quot;VendorData.csv&amp;quot;)
+df &amp;lt;- imported_data&lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;intro&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Intro&lt;/h3&gt;
+&lt;p&gt;Visualization is key when you are looking for the story in the data. This holds true particularly for high volume complex data sets, such as the data a firm might compile as part of its supplier risk management program. I am a strong proponent of the use of R for data analytics of this type. Not only is R free, it is easy to learn, has an amazingly helpful and friendly user community, and the visualizations you can make with libraries such as ggplot2 are highly customizable. My favorite stand alone visualization tool is by far Tableau. I was forced to use R when I didn’t have access to Tableau and I learned to make every visualization I had previously made in Tableau in R, and then some. The key thing is that in R, you can integrate your data manipulation and your graphics in one set of code. For example, you can run a predictive model behind your visualiation in R; something you cannot do in Tableau. It is a rare case that you wouldn’t have to prep your data before pulling it into Tableau.&lt;/p&gt;
+&lt;p&gt;In this article, and a few more that will follow, I intend to demonstrate some visualizations geared toward third party supplier risk management. There are some vexing issues, particularly in the financial services industry within which I work, such as how to identify supply chain risks, or risks across nth suppliers as it is often framed. Here I will introduce network diagrams as a tool to identify hidden dependencies that may warrant more in depth risk analysis.&lt;/p&gt;
+&lt;p&gt;We start with a truncated version of a mock supplier inventory. Each row represents a single service relationship between a supplier and a specific business unit of the company. The business unit is denoted by B# and the supplier by V#. There are two fields, Sub1 and Sub2, that capture other suppliers to whom the main supplier subcontracts. The criticality of the service is captured on a 1 to 4 scale with 4 being considered business critical and a 1 the least critical. If you look hard enough at this data you may be able to spot some key dependencies, but even with just 10 records on the screen, it is not an easy task. You may have a dozen business units and hundreds, if not thousands of supplier relationships.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;rbind(head(df, 5),tail(df,5))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 10 x 6
+##       ID BU    Supplier Sub1  Sub2  Criticality
+##    &amp;lt;dbl&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt;    &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt;       &amp;lt;dbl&amp;gt;
+##  1     1 B1    V01      V22   V33             1
+##  2     2 B1    V02      V23   V12             2
+##  3     3 B1    V03      V24   V19             2
+##  4     4 B1    V04      V01   V12             4
+##  5     5 B1    V05      V14   V30             1
+##  6    16 B3    V11      V19   V26             2
+##  7    17 B4    V05      V20   V17             1
+##  8    18 B4    V04      V01   V12             4
+##  9    19 B4    V09      V16   &amp;lt;NA&amp;gt;            2
+## 10    20 B4    V07      V01   V12             3&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The first step in preparing the data for a network diagram is to extract the relationship pairs into a new table. Here we define two types of relationship, Direct which is between a business unit and a supplier, and Subcontract which is between a Direct supplier and another supplier found in the Sub1 or Sub2 fields. For example, the first row would generate three pairs, one Direct pair between B1 and V01, and then two Subcontractor pairs between V01 and V22, and V01 and V33. Such a table that also preserves the criticality based on the associated Direct relationship may look like this:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df01 &amp;lt;- df[,c(&amp;quot;Supplier&amp;quot;, &amp;quot;BU&amp;quot;, &amp;quot;Criticality&amp;quot;)]
+df01$Type &amp;lt;- &amp;quot;Direct&amp;quot;
+names(df01) &amp;lt;- c(&amp;quot;from&amp;quot;, &amp;quot;to&amp;quot;, &amp;quot;Criticality&amp;quot;, &amp;quot;Type&amp;quot;)
+
+df02 &amp;lt;- df[,c(&amp;quot;Sub1&amp;quot;, &amp;quot;Supplier&amp;quot;, &amp;quot;Criticality&amp;quot;)]
+df02$Type &amp;lt;- &amp;quot;Subcontract&amp;quot;
+names(df02) &amp;lt;- c(&amp;quot;from&amp;quot;, &amp;quot;to&amp;quot;, &amp;quot;Criticality&amp;quot;, &amp;quot;Type&amp;quot;)
+
+df03 &amp;lt;- df[,c(&amp;quot;Sub2&amp;quot;, &amp;quot;Supplier&amp;quot;, &amp;quot;Criticality&amp;quot;)]
+df03$Type &amp;lt;- &amp;quot;Subcontract&amp;quot;
+names(df03) &amp;lt;- c(&amp;quot;from&amp;quot;, &amp;quot;to&amp;quot;, &amp;quot;Criticality&amp;quot;, &amp;quot;Type&amp;quot;)
+
+df1 &amp;lt;- rbind(df01, df02, df03)
+df1 &amp;lt;- df1[complete.cases(df1),]
+
+rbind(head(df1, 5),tail(df1,5))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 10 x 4
+##    from  to    Criticality Type       
+##    &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt;       &amp;lt;dbl&amp;gt; &amp;lt;chr&amp;gt;      
+##  1 V01   B1              1 Direct     
+##  2 V02   B1              2 Direct     
+##  3 V03   B1              2 Direct     
+##  4 V04   B1              4 Direct     
+##  5 V05   B1              1 Direct     
+##  6 V12   V04             4 Subcontract
+##  7 V26   V11             2 Subcontract
+##  8 V17   V05             1 Subcontract
+##  9 V12   V04             4 Subcontract
+## 10 V12   V07             3 Subcontract&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that the “from” and “to” columns denote the direction of the service. Once we have these relationships defined, we can generate the network diagram. First, we will just look at the Direct relationships.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;vert1 &amp;lt;- data.frame(unique(df1[df1$Type == &amp;quot;Direct&amp;quot;,1]))   #Business
+vert2 &amp;lt;- data.frame(unique(df1[df1$Type == &amp;quot;Direct&amp;quot;,2]))   #Supplier
+names(vert1) &amp;lt;- &amp;quot;vert&amp;quot;
+names(vert2) &amp;lt;- &amp;quot;vert&amp;quot;
+vert &amp;lt;- unique(rbind(vert1, vert2))
+
+rel &amp;lt;- df1[df1$Type == &amp;quot;Direct&amp;quot;,1:3]
+names(rel) &amp;lt;- c(&amp;quot;from&amp;quot;, &amp;quot;to&amp;quot;, &amp;quot;Criticality&amp;quot;)
+
+g1 &amp;lt;- graph_from_data_frame(rel, vertices = vert)
+
+V(g1)$family &amp;lt;- ifelse(V(g1)$name %in% vert1$vert, &amp;quot;Business Unit&amp;quot;, &amp;quot;Vendor&amp;quot;)
+
+ggraph(g1, layout = &amp;quot;linear&amp;quot;, circular = TRUE) +
+    geom_edge_link(aes(alpha = Criticality), edge_width = 2, edge_color = &amp;quot;steelblue&amp;quot;) +
+    geom_node_point(color = &amp;quot;steelblue&amp;quot;, shape = 16, size  = 3) +
+    geom_node_text(aes(label = name, color = family), repel = TRUE,
+        point.padding = unit(0.2, &amp;quot;lines&amp;quot;), show.legend = FALSE, fontface = &amp;quot;bold&amp;quot;) +
+    scale_color_brewer(type = &amp;quot;qual&amp;quot;, palette = &amp;quot;Dark2&amp;quot;) +
+    guides(size = FALSE) +
+    labs(title = &amp;quot;Network of Vendor Relationships per Business Unit&amp;quot;) +
+    theme_void() +
+    theme(legend.position = &amp;quot;bottom&amp;quot;, plot.title = element_text(face = &amp;quot;bold&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-05-04-r-visualizations-for-supplier-risk-management-nth-parties_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;This graphic captures the network of vendor relationships per business unit. The intensity of the line signifies the criticality of the service. There are some vendors that service only one or two of the business units and these would appear to be low criticality. The most critical services would appear to be concentrated across the businesses with Vendor 4, followed by Vendor 7. Often, the level of due diligence applied to the service relationship will be driven by the criticality of the service. We can assume then for the sake of this exercise that the level of due diligence applied to Vendor 1 is low because it directly supports only one business unit for a non-critical service. Next we look at what dependencies may be hidden in the supply chain.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;target &amp;lt;- &amp;quot;V01&amp;quot;
+set1 &amp;lt;- df1[df1$from == target,]
+set2 &amp;lt;- df1[df1$from %in% set1$to,]
+
+dft &amp;lt;-rbind(set1, set2)
+
+vert3 &amp;lt;- data.frame(unique(dft[dft$Type == &amp;quot;Direct&amp;quot;,1]))   #Business
+vert4 &amp;lt;- data.frame(unique(dft[dft$Type == &amp;quot;Sub&amp;quot;,1]))   #Supplier with Subcontractor
+vert5 &amp;lt;- data.frame(unique(dft[,2]))   #Supplier/Subcontractor
+
+names(vert3) &amp;lt;- &amp;quot;vert&amp;quot;
+names(vert4) &amp;lt;- &amp;quot;vert&amp;quot;
+names(vert5) &amp;lt;- &amp;quot;vert&amp;quot;
+vertt &amp;lt;- unique(rbind(vert3, vert4, vert5))
+
+relt &amp;lt;- dft[,1:4]
+names(relt) &amp;lt;- c(&amp;quot;from&amp;quot;, &amp;quot;to&amp;quot;, &amp;quot;Criticality&amp;quot;, &amp;quot;Type&amp;quot;)
+
+g2 &amp;lt;- graph_from_data_frame(relt, vertices = vertt)
+
+V(g2)$family &amp;lt;- ifelse(V(g2)$name %in% vert3$vert, &amp;quot;Business Unit&amp;quot;, &amp;quot;Vendor&amp;quot;)
+V(g2)$family[V(g2)$name == target] &amp;lt;- &amp;quot;Target&amp;quot;
+
+
+ggraph(g2, layout = &amp;quot;linear&amp;quot;, circular = TRUE) +
+    geom_edge_link(aes(edge_width = Criticality, edge_color = Type)) +
+    geom_node_point(color = &amp;quot;steelblue&amp;quot;, shape = 16, size  = 5) +
+    geom_node_text(aes(label = name, color = family), repel = TRUE,
+        point.padding = unit(0.2, &amp;quot;lines&amp;quot;), show.legend = FALSE, fontface = &amp;quot;bold&amp;quot;) +
+    scale_color_brewer(type = &amp;quot;qual&amp;quot;, palette = &amp;quot;Dark2&amp;quot;) +
+    scale_edge_color_manual(values = c(&amp;quot;gold3&amp;quot;, &amp;quot;medium purple&amp;quot;)) +
+    guides(size = FALSE) +
+    labs(title = paste0(&amp;quot;Network of Vendor Relationships per Business Unit with Dependency on &amp;quot;,target))+
+    theme_void() +
+    theme(legend.position = &amp;quot;bottom&amp;quot;, plot.title = element_text(face = &amp;quot;bold&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-05-04-r-visualizations-for-supplier-risk-management-nth-parties_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We want to understand where there are subcontractor dependencies in the supply chain. We focus on Vendor 1. First we filter for all direct relationships with Vendor 1, all subcontractor relationships with Vendor 1, and all relationships with those vendors that subcontract to Vendor 1. I’ve changed the graphic up a bit. Now instead of using the line intensity to indicate Criticality, I have used the line thickness. I have color coded the lines to indicate whether the relationship is Direct or Subcontract. Here we can see, as we noted in the earlier graph, there is only one non-critical Direct business unit relationship with Vendor 1. However, now you should also be able to identify that Vendor 4 and Vendor 7 subcontract to Vendor 1 in relation to critical services that impact all or most all of the business units. It is thus apparent that the dependency on Vendor 1 is much greater than understaood if just looking at the direct relationships and suggest that more due diligence on Vendor 1 may be warranted. This same type of analysis can be used to indentify dependencies on vendors where there is no direct relationship at all, or dependencies deeper in the supply chain itself.&lt;/p&gt;
+&lt;p&gt;Visualizations such as Network Diagrams can help us identify patterns in the data that we may otherwise not notice. In this instance we surface a risk exposure we may otherwise not have anticipated.&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
     
     <item>
       <title>Revisiting Weather Impact on Uber Pickups in NYC</title>
@@ -17,8 +152,233 @@
       <pubDate>Tue, 23 Apr 2019 00:00:00 +0000</pubDate>
       
       <guid>/2019/04/23/revisiting-weather-impact-on-uber-pickups-in-nyc/</guid>
-      <description>Intro A friend had asked how I would approach using a regression model in R on this data set to determine if weather has any impact on Uber usage in New York City. I was intrigued to know the result and thought this would make a good first blog post. A call out to Yannis Pappas for making this dataset available. http://www.yannispappas.com/Exploring-Uber-Demand/
-To recap, Yannis compiled the Uber Pickup data from the first 6 months of 2015 (from Kaggle), weather data from the National Centers for Environmental Information, LocationID to Borough mapping (by FiveThirtyEight) and NYC public holidays.</description>
+      <description>
+
+
+&lt;div id=&#34;intro&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Intro&lt;/h3&gt;
+&lt;p&gt;A friend had asked how I would approach using a regression model in R on this data set to determine if weather has any impact on Uber usage in New York City. I was intrigued to know the result and thought this would make a good first blog post. A call out to Yannis Pappas for making this dataset available. &lt;a href=&#34;http://www.yannispappas.com/Exploring-Uber-Demand/&#34; class=&#34;uri&#34;&gt;http://www.yannispappas.com/Exploring-Uber-Demand/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;To recap, Yannis compiled the Uber Pickup data from the first 6 months of 2015 (from Kaggle), weather data from the National Centers for Environmental Information, LocationID to Borough mapping (by FiveThirtyEight) and NYC public holidays. He aggregated the data by hour to arrive at 29,101 records.&lt;/p&gt;
+&lt;p&gt;The 13 variables are as follows: pickup_dt: Time period of the observations. borough: NYC’s borough. pickups: Number of pickups for the period. spd: Wind speed in miles/hour. vsb: Visibility in Miles to nearest tenth. temp: temperature in Fahrenheit. dewp: Dew point in Fahrenheit. slp: Sea level pressure. pcp01: 1-hour liquid precipitation. pcp06: 6-hour liquid precipitation. pcp24: 24-hour liquid precipitation. sd: Snow depth in inches. hday: Being a holiday (Y) or not (N).&lt;/p&gt;
+&lt;p&gt;We load the required libraries and the uber.csv file.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
+library(readr)
+library(lubridate)
+library(caret)
+library(corrplot)
+library(zoo)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;imported_data &amp;lt;- read_csv(&amp;quot;uber.csv&amp;quot;)
+df &amp;lt;- imported_data&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;intuitions&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Intuitions&lt;/h3&gt;
+&lt;p&gt;I will use the Variable Importance results of a Random Forest to determine the degree to which weather related variables explain variance in Uber pickups.&lt;/p&gt;
+&lt;p&gt;First, a few intuitions. As I am interested in NYC as a whole, I will consolidate the data over the boroughs. I expect the day of the week adjusted by the holiday variable to be the primary driver of the Uber pickups. My next step will be to create new date component variables and use those variables to generate a baseline model. Then I will look to see to what extent I could improve the model results by introducing weather related variables. My initial thoughts are that rain and snow are the most likely elements that would impact Uber (or taxi for that matter) usage. As for rain, I expect people would not be concerned with previous precipitation, but current state and short term predictions of rain. As for snow, I don’t think people in NYC are that bothered by it when it is coming down, but accumulation could make it harder for those who otherwise were intending to walk. That being said, NYC is pretty efficient at clearing up snow, so likely only accumulation over a recent short time period may prompt people to take an Uber. Based on these initial thoughts, I will work on creating a few new variables from the data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df &amp;lt;- df %&amp;gt;% 
+    select(-borough) %&amp;gt;%
+    group_by(pickup_dt, hday) %&amp;gt;% 
+    summarise(pickups = sum(pickups),
+              spd = mean(spd),
+              vsb = mean(vsb),
+              temp = mean(temp),
+              dewp = mean(dewp),
+              slp = mean(slp),
+              pcp01 = mean(pcp01),
+              pcp06 = mean(pcp06),
+              pcp24 = mean(pcp24),
+              sd = mean(sd)) %&amp;gt;%
+    ungroup() %&amp;gt;%
+    mutate(id = 1:length(unique(df$pickup_dt)),
+           month = month(pickup_dt),
+           day= day(pickup_dt),
+           wday = wday(pickup_dt),
+           hour = hour(pickup_dt),
+           hday = (hday == &amp;quot;Y&amp;quot;),
+           wday_hday = ifelse(hday==TRUE, 8, wday)) %&amp;gt;%
+    select(-pickup_dt) %&amp;gt;% 
+    select(id, everything())&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;date-component-variables&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Date Component Variables&lt;/h3&gt;
+&lt;p&gt;Let’s take a look at how these date component variables correlate with the Uber pickups.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;correlations &amp;lt;- cor(df[,c(&amp;quot;month&amp;quot;, &amp;quot;day&amp;quot;, &amp;quot;wday_hday&amp;quot;, &amp;quot;hour&amp;quot;, &amp;quot;pickups&amp;quot;)])
+corrplot(correlations, order = &amp;quot;hclust&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;It is no surprise that the hour of the day has a very high correlation to the number of pickups. To a lesser extent we see that the month and day of the week/holiday do as well. Below I explain why I consolidated day of the week and holiday into one variable. The day of the month also correlates positively with the number of pickups but the influence of this variable is negligible.&lt;/p&gt;
+&lt;p&gt;Let’s take a look at the distribution of pickups over the values of these date variables.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df %&amp;gt;% 
+    select(month, pickups) %&amp;gt;% 
+    group_by(month) %&amp;gt;% 
+    summarise(pickups = mean(pickups)) %&amp;gt;% 
+    ggplot(aes(month, pickups)) +
+    geom_col(fill=&amp;quot;lightblue&amp;quot;, width = 0.5) +
+    labs(title = &amp;quot;Uber Pickups per Month&amp;quot;)+
+    scale_x_continuous(breaks = 1:6, labels = c(&amp;quot;Jan&amp;quot;, &amp;quot;Feb&amp;quot;, &amp;quot;Mar&amp;quot;, &amp;quot;Apr&amp;quot;, &amp;quot;May&amp;quot;,&amp;quot;Jun&amp;quot;))+
+    theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;With the exception of February, there is a month on month upward trend in pickups. This trend is likely explained by growing demand and popularity of the service over the course of 2015. It was a year when the number of Uber drivers doubled. &lt;a href=&#34;https://www.businessinsider.com/uber-doubles-its-drivers-in-2015-2015-10&#34; class=&#34;uri&#34;&gt;https://www.businessinsider.com/uber-doubles-its-drivers-in-2015-2015-10&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df %&amp;gt;% 
+    select(wday_hday, pickups) %&amp;gt;% 
+    group_by(wday_hday) %&amp;gt;% 
+    summarise(pickups = mean(pickups)) %&amp;gt;% 
+    ggplot(aes(wday_hday, pickups)) +
+    geom_col(fill=&amp;quot;lightblue&amp;quot;, width = 0.5) +
+    labs(title = &amp;quot;Uber Pickups per Day of Week / Holiday&amp;quot;) +
+    scale_x_continuous(breaks = 1:8, labels = c(&amp;quot;Sun&amp;quot;, &amp;quot;Mon&amp;quot;, &amp;quot;Tues&amp;quot;, &amp;quot;Wed&amp;quot;, &amp;quot;Thu&amp;quot;,&amp;quot;Fri&amp;quot;, &amp;quot;Sat&amp;quot;, &amp;quot;Hol&amp;quot;))+
+    theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Ridership increases Monday through Saturday then tapers to mid-week levels on Sunday. Holidays had low ridership on a par with Mondays so I overrode the day of the week value if it were a holiday and created an 8th category, giving new meaning to 8 days a week.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df %&amp;gt;% 
+    select(day, pickups) %&amp;gt;% 
+    group_by(day) %&amp;gt;% 
+    summarise(pickups = mean(pickups)) %&amp;gt;% 
+    ggplot(aes(day, pickups)) +
+    geom_col(fill=&amp;quot;lightblue&amp;quot;) +
+    labs(title = &amp;quot;Uber Pickups per Day of the Month&amp;quot;) +
+    geom_smooth(method=&amp;#39;lm&amp;#39;,formula= y~ x)+
+    theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Above when we looked at the correlations, we saw a negligible increase in ridership over the course of the month. One point I found fascinating is that the peaks are around mid-month, the 20th, and the end of the month. A colleague of mine who commuted many years between New Jersey and Westchester, NY had suggested that traffic was worst on those days that correspond with paydays, mid and end of month for those who get paid bi-weekly, and around the 20th for those who get paid monthly. I haven’t found any research that supports that so it may be the subject of a future little project.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df %&amp;gt;% 
+    select(hour, pickups) %&amp;gt;% 
+    group_by(hour) %&amp;gt;% 
+    summarise(pickups = mean(pickups)) %&amp;gt;% 
+    ggplot(aes(hour, pickups)) +
+    geom_col(fill=&amp;quot;lightblue&amp;quot;) +
+    labs(title = &amp;quot;Uber Pickups per Hour&amp;quot;)+
+    theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-8-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;The impact of the Hour variable is quite clear with Uber pickups increasing in the morning rush hour, tapering a bit in the early afternoon, picking up for the evening rush, keeping high throughout the evening, then dropping off in the early morning hours.&lt;/p&gt;
+&lt;p&gt;Let’s run a model with these variables to see how much of the variance in Uber pickups they explain. Since we are looking to understand the amount of variance explained, we will use RSquared as the metric.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;train_x &amp;lt;- df[,c(&amp;quot;month&amp;quot;, &amp;quot;day&amp;quot;, &amp;quot;wday_hday&amp;quot;, &amp;quot;hour&amp;quot;)]
+train_y &amp;lt;- as.numeric(df$pickups)
+
+set.seed(101)
+rf &amp;lt;- train(train_x, train_y, method = &amp;quot;rf&amp;quot;, metric = &amp;quot;RSquared&amp;quot;, importance = TRUE)
+
+v &amp;lt;- (varImp(rf)$importance)
+Variable &amp;lt;- as.matrix(rownames(v))
+v &amp;lt;- cbind(Variable,v)
+v &amp;lt;- head(v[order(-v$Overall),],ncol(train_x)) 
+
+
+ggplot(data=v, aes(reorder(Variable, -Overall), y=Overall))+                
+    geom_bar(stat=&amp;quot;identity&amp;quot;,fill=&amp;quot;red&amp;quot;, width = 0.5)+
+    theme(axis.text.x=element_text(angle=45,vjust =1, hjust=1))+
+    labs(x=&amp;quot;Variable&amp;quot;, y=&amp;quot;Importance&amp;quot;)+
+    ggtitle(paste0(&amp;quot;Variable Importance with &amp;quot;, round(max(rf$finalModel$rsq) * 100, 2),&amp;quot; of variance explained&amp;quot;))+
+    theme_bw()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-9-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;The hour, wday_hday and month variables account for 94.79 of the variance. That is the baseline we now need to see if we can improve upon with the weather related variables.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;weather-component-variables&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Weather Component Variables&lt;/h2&gt;
+&lt;p&gt;We will start again by looking at the variable correlations with the target variable and this time also check for high correlations across variables.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;correlations &amp;lt;- cor(df[,c(&amp;quot;month&amp;quot;, &amp;quot;day&amp;quot;, &amp;quot;wday_hday&amp;quot;, &amp;quot;hour&amp;quot;, &amp;quot;pickups&amp;quot;,&amp;quot;spd&amp;quot;, &amp;quot;vsb&amp;quot;, &amp;quot;temp&amp;quot;, 
+                          &amp;quot;dewp&amp;quot;, &amp;quot;slp&amp;quot;, &amp;quot;pcp01&amp;quot;, &amp;quot;pcp06&amp;quot;, &amp;quot;pcp24&amp;quot;, &amp;quot;sd&amp;quot;)])
+corrplot(correlations, order = &amp;quot;hclust&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-10-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;The variable that stands out the most as having a correlation with pickups, a positive correlation, is temperature. Does this suggest that as the weather warms up, more people take Uber? There is a high positive correlation between temperature and month. This is to be expected in the first 6 months of the year as generally temperature increases each of those months. Above, we saw that the number of pickups increased each month and this was due to the increase in the number of Uber drivers. Similarly, the dew point variable is highly dependent on temperature. It is best to ignore the temp and dewp variables because of the correlation with the month variable. Sea level pressure shows a slight negative correlation with pickups and it is usually an indicator of the weather. The pcp24, previous 24 hour liquid precipitation, would also appear to have a slight negative correlation with pickups. It seems counterintuitive that this variable would have any correlation with pickups when the previous 1 and 6 hours do not, let alone a negative correlation. Let’s look more closely at these precipitation variables.&lt;/p&gt;
+&lt;p&gt;Let’s start by taking a look at snow.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(df$id, df$sd, 
+main=&amp;quot;Snow Depth over Sequenced Records&amp;quot;,
+xlab=&amp;quot;Sequence ID&amp;quot;,
+ylab=&amp;quot;Snow Depth&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-11-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;The sd variable measures snow depth. From the graph we can identify periods when the snow is accumulating and periods when it is melting. We will define a new variable to measure the amount of snow fall when the sd value is increasing.&lt;/p&gt;
+&lt;p&gt;Before we look at the actual precipitation variables, let’s consider the basic pattern we should see when they are plotted. As an example, I’ve made a data set that covers 24 hours and for the first 12 hours the precipitation is a constant 0.01 per hour. There is no precipitation in the latter 12 hours. Will assume there was also no precipitation in the 24 hour period preceeding this data set.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df2 &amp;lt;- data.frame(id = (1:24), pcp01 = c(rep(c(0.1,0), each = 12)))
+df2$pcp06 &amp;lt;- rollapply(df2$pcp01, FUN = sum, width = 6, partial= TRUE, align = &amp;quot;right&amp;quot;)
+df2$pcp24 &amp;lt;- rollapply(df2$pcp01, FUN = sum, width = 24, partial= TRUE, align = &amp;quot;right&amp;quot;)
+
+ggplot(df2,aes(id))+
+    geom_line(aes(y=pcp01, color=&amp;quot;pcp01&amp;quot;), position = position_jitter(w=0.1, h=.004))+
+    geom_line(aes(y=pcp06, color=&amp;quot;pcp06&amp;quot;), position = position_jitter(w=0.1, h=.003))+
+    geom_line(aes(y=pcp24, color=&amp;quot;pcp24&amp;quot;), position = position_jitter(w=0.1, h=.005))+
+    theme_bw()+
+    labs(title = &amp;quot;Anticipated Pattern of Precipitation Tracking Variables&amp;quot;, 
+         x= &amp;quot;Hourly Sequence ID&amp;quot;, y = &amp;quot;Precipitation Amount&amp;quot;,
+         colour = &amp;quot;Variable&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;An obvious point in this graph is that the three variables begin to track the accumulated precipitation at the same point in time, in this case, hour 1. At hour 10, the previous one hour precipitation is 0.1, the previous 6 hour precipitation is 0.6, and the previous 24 hour precipitation is 1.0. This pattern, however, is not apparent in the Uber data set which leads me to believe the variables are not tracking what the data specifications say they are.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df %&amp;gt;% 
+    select(id, pcp01, pcp06, pcp24) %&amp;gt;% 
+    filter(id %in% (170:220)) %&amp;gt;% 
+    ggplot(aes(id))+
+    geom_line(aes(y=pcp01, color=&amp;quot;pcp01&amp;quot;))+
+    geom_line(aes(y=pcp06, color=&amp;quot;pcp06&amp;quot;))+
+    geom_line(aes(y=pcp24, color=&amp;quot;pcp24&amp;quot;))+
+    theme_bw()+
+    labs(title = &amp;quot;Precipitation Variables Hours 170 to 220&amp;quot;, x= &amp;quot;Hourly Sequence ID&amp;quot;, y = &amp;quot;Precipitation Amount&amp;quot;,
+         colour = &amp;quot;Variable&amp;quot;)+
+    geom_point(data = subset(df, id==198), aes(id,pcp24))+
+    geom_text(data = subset(df, id==198), aes(id,pcp24,label = id), nudge_y = 0.002)+
+    geom_point(data = subset(df, id==204), aes(id,pcp01))+
+    geom_text(data = subset(df, id==204), aes(id,pcp01,label = id), nudge_y = 0.002)+
+    geom_point(data = subset(df, id==208), aes(id,pcp06))+
+    geom_text(data = subset(df, id==208), aes(id,pcp06,label = id), nudge_x = 2,nudge_y = 0.002)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;This graph maps the precipitation variables from around Jan 7th, from the 170th to the 220th sequential hour in the data set after a period of more than 24 hours with no liquid precipitation. This sample parallels the hypothetical example I created above to demonstrate how the accumulation variables should work. Contrary to what we saw in the hypothetical example, the three variables are out of synch. I am going to assume that the 1 hour tracking variable is correct and the other two are wrong. Will create two replacement variables based on pcp01.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df$pcp06_replace &amp;lt;- rollapply(df$pcp01, FUN = sum, width = 6, partial= TRUE, align = &amp;quot;right&amp;quot;)
+df$pcp24_replace &amp;lt;- rollapply(df$pcp01, FUN = sum, width = 24, partial= TRUE, align = &amp;quot;right&amp;quot;)
+
+df %&amp;gt;% 
+    select(id, pcp01, pcp06_replace, pcp24_replace) %&amp;gt;% 
+    filter(id %in% (170:220)) %&amp;gt;% 
+    ggplot(aes(id))+
+    geom_line(aes(y=pcp01, color=&amp;quot;pcp01&amp;quot;), position = position_jitter(w=0.4, h=.0004))+
+    geom_line(aes(y=pcp06_replace, color=&amp;quot;pcp06_replace&amp;quot;), position = position_jitter(w=0.5, h=.0003))+
+    geom_line(aes(y=pcp24_replace, color=&amp;quot;pcp24_replace&amp;quot;), position = position_jitter(w=0.3, h=.0005))+
+    theme_bw()+
+    labs(title = &amp;quot;Revised Precipitation Variables Hours 170 to 220&amp;quot;, x= &amp;quot;Hourly Sequence ID&amp;quot;, y = &amp;quot;Precipitation Amount&amp;quot;,
+         colour = &amp;quot;Variable&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;These variables now act as expected though I doubt they will have an impact on Uber pickups. I will show the correlation plot one last time as there are a few other issues that have emerged that reflect the fact the data set is over a relatively short period of time.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;correlations &amp;lt;- cor(df[,c(&amp;quot;month&amp;quot;, &amp;quot;day&amp;quot;, &amp;quot;wday_hday&amp;quot;, &amp;quot;hour&amp;quot;, &amp;quot;pickups&amp;quot;,&amp;quot;spd&amp;quot;, &amp;quot;vsb&amp;quot;, &amp;quot;temp&amp;quot;, 
+                          &amp;quot;dewp&amp;quot;,&amp;quot;slp&amp;quot;, &amp;quot;pcp01&amp;quot;, &amp;quot;pcp06_replace&amp;quot;, &amp;quot;pcp24_replace&amp;quot;, &amp;quot;snowfall&amp;quot;)])
+corrplot(correlations, order = &amp;quot;hclust&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-16-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;On the positive side, we can see that the relationship between visibility (vsb) and the precipitation variables is stronger which suggests these variables are now more in synch. It is a similar situation with the sea level pressure variable (slp). On the not so positive side, we see minor negative correlations between the precipitation variables and day of the week (wday_hday), and between both sea level pressure (slp) and visibility (vsb), and day of the month (day). If you were to plot the pcp01 variable by the day of the week, you’d see that over this period, more rain tended to fall on the first three days of the week. The plot below between the day of the month and sea level pressure suggests that 6 months of data is not enough to completely randomize the relationship between these variables.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(df,aes(day, slp))+
+    geom_point()+
+    geom_smooth() +
+    labs(title = &amp;quot;Sea Level Pressure by Day of the Month&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## `geom_smooth()` using method = &amp;#39;gam&amp;#39; and formula &amp;#39;y ~ s(x, bs = &amp;quot;cs&amp;quot;)&amp;#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-17-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Returning to my initial intuitions, I am going to use the pcp01 and snowfall variables to create two new types of variables. The first set of new variables will capture the last several hours of rain and snowfall. The second set will assume that the rain and snow that actually fell during any given hour was predicted several hours in advance.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df &amp;lt;- df %&amp;gt;% 
+    mutate(rain_2hr_cum = pcp01 + lag(pcp01, n=1, default = 0)  + lag(pcp01, n=2, default = 0),
+           rain_2hr_pred = pcp01 + lead(pcp01, n=1, default = 0)  + lead(pcp01, n=2, default = 0),
+           snow_2hr_cum = snowfall + lag(snowfall, n=1, default = 0)  + lag(snowfall, n=2, default = 0),
+           snow_2hr_pred = snowfall + lead(snowfall, n=1, default = 0)  + lead(snowfall, n=2, default = 0))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;importance-of-the-weather-variables&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Importance of the Weather Variables&lt;/h2&gt;
+&lt;p&gt;Ultimately, after running a multitude of scenarios that included weather related variables, this is the set that explained the most variance.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;train_x &amp;lt;- df[,c(&amp;quot;month&amp;quot;, &amp;quot;day&amp;quot;, &amp;quot;wday_hday&amp;quot;, &amp;quot;hour&amp;quot;, &amp;quot;rain_2hr_pred&amp;quot;, &amp;quot;snow_2hr_cum&amp;quot;, &amp;quot;slp&amp;quot;)]
+train_y &amp;lt;- as.numeric(df$pickups)
+
+set.seed(101)
+rf &amp;lt;- train(train_x, train_y, method = &amp;quot;rf&amp;quot;, metric = &amp;quot;RSquared&amp;quot;, importance = TRUE)
+
+v &amp;lt;- (varImp(rf)$importance)
+Variable &amp;lt;- as.matrix(rownames(v))
+v &amp;lt;- cbind(Variable,v)
+v &amp;lt;- head(v[order(-v$Overall),],ncol(train_x)) 
+
+
+ggplot(data=v, aes(reorder(Variable, -Overall), y=Overall))+                
+    geom_bar(stat=&amp;quot;identity&amp;quot;,fill=&amp;quot;red&amp;quot;, width = 0.5)+
+    theme(axis.text.x=element_text(angle=45,vjust =1, hjust=1))+
+    labs(x=&amp;quot;Variable&amp;quot;, y=&amp;quot;Importance&amp;quot;)+
+    ggtitle(paste0(&amp;quot;Variable Importance with &amp;quot;, round(max(rf$finalModel$rsq) * 100, 2),&amp;quot; of variance explained&amp;quot;))+
+    theme_bw()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-04-23-revisiting-weather-impact-on-uber-pickups-in-nyc_files/figure-html/unnamed-chunk-19-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;This model with the addition of several weather variables explains nearly the same level of variance as the baseline model though the importance of the weather variables in this model is clearly insignificant. To the extent the weather variables have predictive value, this could be the result of the correlations with the date component variables discussed above. The baseline model is a better model as it explains the same level of variance and is simpler. We thus conclude that weather is not an important factor in determining the number of Uber pickups.&lt;/p&gt;
+&lt;/div&gt;
+</description>
     </item>
     
   </channel>
