@@ -17,7 +17,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 rssLimit = 1
 
 [params]
-  sitename = "exploRations"
+  sitename = "exploRations in R"
 
 [permalinks]
     post = "/:year/:month/:day/:slug/"
