@@ -29,6 +29,8 @@ Visualization is key when you are looking for the story in the data. This holds 
 
 In this article, and a few more that will follow, I intend to demonstrate some visualizations geared toward third party supplier risk management. There are some vexing issues, particularly in the financial services industry within which I work, such as how to identify supply chain risks, or risks across nth suppliers as it is often framed. Here I will introduce network diagrams as a tool to identify hidden dependencies that may warrant more in depth risk analysis. 
 
+
+### Network Diagrams
 We start with a truncated version of a mock supplier inventory. Each row represents a single service relationship between a supplier and a specific business unit of the company. The business unit is denoted by B# and the supplier by V#. There are two fields, Sub1 and Sub2, that capture other suppliers to whom the main supplier subcontracts. The criticality of the service is captured on a 1 to 4 scale with 4 being considered business critical and a 1 the least critical. If you look hard enough at this data you may be able to spot some key dependencies, but even with just 10 records on the screen, it is not an easy task. You may have a dozen business units and hundreds, if not thousands of supplier relationships. 
 ```{r}
 rbind(head(df, 5),tail(df,5))
