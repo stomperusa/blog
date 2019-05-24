@@ -38,5 +38,5 @@ rssLimit = 1
 #    weight = 4
 [[menu.main]]
     name = "RSS"
-    url = "/index.xml"
+    url = "/categories/r/index.xml"
     weight = 5
