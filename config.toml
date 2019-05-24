@@ -34,7 +34,7 @@ rssLimit = 1
 #    name = "Twitter"
 #    url = "https://twitter.com/stomperusa"
 #    weight = 4
-#[[menu.main]]
-#    name = "RSS"
-#    url = "/public/categories/index.xml"
-#    weight = 5
+[[menu.main]]
+    name = "RSS"
+    url = "/public/categories/index.xml"
+    weight = 5
