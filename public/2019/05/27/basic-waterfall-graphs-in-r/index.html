@@ -59,7 +59,7 @@
 <div id="basic-waterfall-graphs" class="section level3">
 <h3>Basic Waterfall Graphs</h3>
 <p>A waterfall graph generally reads from left to right with the starting and ending values represented by vertically drawn bars. Connecting the two bars is a series of incremental or decremental steps sized by the associated values that ultimately sum to the difference between the beginning and ending values.</p>
-<p>We first look at how to structure the data in the example below based the need to demonstrate how to implement a budget reduction from 5 to 4.5 million. You should structure your data such that the first row of data represents the start point, the last row the end point, and those in between are the incremental increases and decreases. You want the sum of the value column to be zero, so you flip the sign on either the starting or the ending value.</p>
+<p>We first look at how to structure the data in the example below based on the need to demonstrate a budget reduction from 5 to 4.5 million. You should structure your data such that the first row of data represents the start point, the last row the end point, and those in between are the incremental increases and decreases. You want the sum of the value column to be zero, so you flip the sign on either the starting or the ending value.</p>
 <p>In the example, the first row, “Prev Budget” carries the initial value of 5. The last row, “Current Budget” carries the final value of 4.5 with the sign flipped. The seven rows in between are the incremental increases (if positive) and decreases (if negative). Note the second to the last row I’ve labeled “Gap to Target”, a convention for how to show work is still in progress to get the numbers to align.</p>
 <pre class="r"><code>df &lt;- tribble(
     ~Category, ~Value, 
@@ -118,6 +118,11 @@ data1 &lt;- df  %&gt;%
 ## 8 Gap to Target  -0.175  4.5   4.68     8     9 Decrease
 ## 9 Current Budget -4.5    0     4.5     NA    NA Budget</code></pre>
 <p>Now we are ready to graph. We start by setting up the theme and label elements.</p>
+<pre class="r"><code>g &lt;- ggplot(data1) +
+        theme_bw()+
+        theme(legend.position = &quot;right&quot;, panel.grid = element_blank(), 
+            axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+        labs(y = &quot;USD Millions&quot;, x = &quot;Expense Category&quot;, title = &quot;Explanation of Budget Gap Closure&quot;)</code></pre>
 <p>Next we use geom_rect() to plot the bars. Before doing that, we create a variable ‘w’ that we will use to set the width of the bars. Any positive value less than 1 is acceptable. Values of 1 or greater will run the bars together horizontally. The placement of the bar will be split evenly on either side of the x value designated by the factor value of each column.</p>
 <pre class="r"><code>w &lt;- 0.4  #use to set width of bars
 
