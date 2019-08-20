@@ -1,0 +1,71 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Fractals on exploRations in R</title>
+    <link>/tags/fractals/</link>
+    <description>Recent content in Fractals on exploRations in R</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 20 Aug 2019 00:00:00 +0000</lastBuildDate>
+    
+        <atom:link href="/tags/fractals/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>recursive shape fractal generator</title>
+      <link>/2019/08/20/recursive-shape-fractal-generator/</link>
+      <pubDate>Tue, 20 Aug 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/08/20/recursive-shape-fractal-generator/</guid>
+      <description>
+
+
+&lt;div id=&#34;intro&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Intro&lt;/h3&gt;
+&lt;p&gt;This function allows us to generate the Sierpinski Triangle and explore other recursive shapes with equal length sides following the same algorithm.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape &amp;lt;- function(corners, trials = 100000){
+    
+    corners &amp;lt;- as.integer(corners)
+    points &amp;lt;- list()
+
+    if (corners &amp;lt; 3) stop(&amp;quot;Value should be 3 or greater&amp;quot;)
+ 
+    for (n in 1:(corners)){
+     points$x[n] &amp;lt;- 0 + cos((2*pi*n)/corners)
+        points$y[n] &amp;lt;- 0 + sin((2*pi*n)/corners)
+    }
+
+    x &amp;lt;- points$x[1]
+    y &amp;lt;- points$y[1]
+
+    trials &amp;lt;- trials
+    sierpinski &amp;lt;- list()
+
+    for (t in 1:trials){
+        r &amp;lt;- sample(1:corners,1)
+        x &amp;lt;- (x + points$x[r]) / sqrt(corners + 1)
+        y &amp;lt;- (y + points$y[r]) / sqrt(corners + 1)
+        sierpinski$x[t] &amp;lt;- x
+        sierpinski$y[t] &amp;lt;- y
+    }
+
+ 
+    # I use these colors for random color selection. Update for your own desired selection.
+    color &amp;lt;- sample(c(&amp;quot;royalblue2&amp;quot;, &amp;quot;firebrick2&amp;quot;, &amp;quot;gold2&amp;quot;, &amp;quot;springgreen3&amp;quot;, &amp;quot;purple2&amp;quot;, &amp;quot;darkorange1&amp;quot;),1)
+
+    plot(sierpinski$x[corners:trials], sierpinski$y[corners:trials],
+        xlab = paste0(corners, &amp;quot; Sides Chosen&amp;quot;), ylab = &amp;quot;&amp;quot;, xaxt = &amp;quot;n&amp;quot;, yaxt = &amp;quot;n&amp;quot;, col = color)
+
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When you run the function, you indicate the number of sides for the polygon and adjust the number of trials to change the resolution if desired. Here are some examples:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape(3)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape(4)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-2.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape(6)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-3.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
