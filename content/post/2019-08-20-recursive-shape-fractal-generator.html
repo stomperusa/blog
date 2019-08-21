@@ -1,0 +1,59 @@
+---
+title: "recursive shape fractal generator"
+author: "Stomperusa"
+date: '2019-08-20'
+output:
+  html_document:
+    df_print: paged
+slug: recursive-shape-fractal-generator
+tags: Fractals
+categories: R
+---
+
+
+
+<div id="intro" class="section level3">
+<h3>Intro</h3>
+<p>This function allows us to generate the Sierpinski Triangle and explore other recursive shapes with equal length sides following the same algorithm.</p>
+<pre class="r"><code>shape &lt;- function(corners, trials = 100000){
+    
+    corners &lt;- as.integer(corners)
+    points &lt;- list()
+
+    if (corners &lt; 3) stop(&quot;Value should be 3 or greater&quot;)
+ 
+    for (n in 1:(corners)){
+     points$x[n] &lt;- 0 + cos((2*pi*n)/corners)
+        points$y[n] &lt;- 0 + sin((2*pi*n)/corners)
+    }
+
+    x &lt;- points$x[1]
+    y &lt;- points$y[1]
+
+    trials &lt;- trials
+    sierpinski &lt;- list()
+
+    for (t in 1:trials){
+        r &lt;- sample(1:corners,1)
+        x &lt;- (x + points$x[r]) / sqrt(corners + 1)
+        y &lt;- (y + points$y[r]) / sqrt(corners + 1)
+        sierpinski$x[t] &lt;- x
+        sierpinski$y[t] &lt;- y
+    }
+
+ 
+    # I use these colors for random color selection. Update for your own desired selection.
+    color &lt;- sample(c(&quot;royalblue2&quot;, &quot;firebrick2&quot;, &quot;gold2&quot;, &quot;springgreen3&quot;, &quot;purple2&quot;, &quot;darkorange1&quot;),1)
+
+    plot(sierpinski$x[corners:trials], sierpinski$y[corners:trials],
+        xlab = paste0(corners, &quot; Sides Chosen&quot;), ylab = &quot;&quot;, xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, col = color)
+
+}</code></pre>
+<p>When you run the function, you indicate the number of sides for the polygon and adjust the number of trials to change the resolution if desired. Here are some examples:</p>
+<pre class="r"><code>shape(3)</code></pre>
+<p><img src="/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<pre class="r"><code>shape(4)</code></pre>
+<p><img src="/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
+<pre class="r"><code>shape(6)</code></pre>
+<p><img src="/post/2019-08-20-recursive-shape-fractal-generator_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
+</div>
