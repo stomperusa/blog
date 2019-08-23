@@ -1,0 +1,124 @@
+---
+title: "Exploration of 3D Fractals"
+author: "stomperusa"
+date: '2019-08-23'
+output:
+  html_document:
+    df_print: paged
+slug: exploration-of-3d-fractals
+tags: Fractals
+categories: R
+---
+
+### Intro
+In an earlier post, I introduced a function to generate fractals based on regular polygons. In this post I explore doing the same in 3D.
+
+```{r message=FALSE, warning=FALSE, echo=TRUE}
+library(dplyr)
+library(plotly)
+library(RColorBrewer)
+```
+
+### Fractals in 3D
+In my previous post on 2D fractals, my function used a formula to generate the starting coordinates for the selected regular polygon. In this case, I have resorted to including the coordinates for a regular tetrahedron, cube, and dodecahedron directly in the function. If anyone is aware of an algorithm for generating such 3D coordinates given the number of sides of the regular polygon, please advise as I would love to include this. 
+
+I also use the plotly package to render the 3D images which allows one to reorient and zoom the image to explore the fractal nature. The function takes the number of sides of the base polygon (limited to 3, 4 or 5) and an optional second argument to adjust the resolution. 
+
+
+```{r echo=TRUE}
+shape <- function(sides, trials = 100000){
+    
+    if (!sides %in% c(3, 4, 5)) stop("Value should be 3, 4 or 5")
+    
+    theta <- (1 + sqrt(5)) / 2
+    
+    df3 <- tribble(
+        ~x, ~y, ~z,
+        #----------
+        1, 0, -1/sqrt(2),
+        -1, 0, -1/sqrt(2),
+        0, 1, 1/sqrt(2),
+        0, -1, 1/sqrt(2)
+    )
+    
+    df4 <- tribble(
+        ~x, ~y, ~z,
+        #----------
+        1, 1, 1,
+        -1, 1, 1,
+        1, -1, 1,
+        1, 1, -1,
+        -1, -1, 1,
+        1, -1, -1, 
+        -1, 1, -1,
+        -1, -1, -1
+    )
+    
+    df5 <- tribble(
+        ~x, ~y, ~z,
+        #----------
+        1, 1, 1,
+        -1, 1, 1,
+        1, -1, 1,
+        1, 1, -1,
+        -1, -1, 1,
+        1, -1, -1, 
+        -1, 1, -1,
+        -1, -1, -1,
+        0, theta, 1/theta,
+        0, - theta, 1/theta,
+        0, theta, -1/theta,
+        0, -theta, -1/theta,
+        theta, 1/theta, 0,
+        - theta, 1/theta, 0,
+        theta, -1/theta, 0,
+        -theta, -1/theta, 0,
+        1/theta, 0, theta, 
+        1/theta, 0, - theta, 
+        -1/theta, 0, theta, 
+        -1/theta, 0, -theta
+    )
+    
+    shape_list <- list("3" = df3, "4" = df4, "5" = df5)
+    
+    points <- data.frame(shape_list[as.character(sides)])
+    colnames(points) <- c("x", "y", "z")
+    
+    x <- points$x[1]
+    y <- points$y[1]
+    z <- points$z[1]
+    
+    trials <- trials
+    sierpinski <- list()
+    
+    for (t in 1:trials){
+        r <- sample(1:nrow(points),1)
+        x <- (x + points$x[r]) / sqrt(nrow(points))
+        y <- (y + points$y[r]) / sqrt(nrow(points))
+        z <- (z + points$z[r]) / sqrt(nrow(points))
+        sierpinski$x[t] <- x
+        sierpinski$y[t] <- y
+        sierpinski$z[t] <- z
+    }
+    
+    df <- bind_rows(sierpinski)
+    df <- df[sides:trials,]
+    
+    n <- sides
+    
+    color_samp<- sample(RColorBrewer::brewer.pal(n,"Dark2"),1)
+    
+   plot_ly(df, x = ~x, y = ~y, z = ~z, type="scatter3d", mode="markers", 
+            marker = list(color=color_samp, size = 0.5))
+
+}
+
+```
+
+Here is an example based on Sierpinski's Triangle. Enjoy maneuvering the 3D plot!
+
+```{r echo=TRUE}
+shape(3)
+```
+
+
