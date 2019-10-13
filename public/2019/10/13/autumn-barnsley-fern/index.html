@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <title>
+    
+    
+     Autumn Barnsley Fern 
+    
+  </title>
+  <link rel="canonical" href="/2019/10/13/autumn-barnsley-fern/">
+
+  <link rel="stylesheet" href="/css/fonts.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="/">exploRations in R</a></h1>
+  <ul>
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://github.com/stomperusa">GitHub</a></li>
+    
+    <li><a href="/post/index.xml">RSS</a></li>
+    
+    <li><a href="https://www.r-bloggers.com">Rbloggers</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Autumn Barnsley Fern </h1>
+
+  <div id=sub-header>
+    stomperusa · 2019/10/13 · 3 minute read
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<div id="intro" class="section level3">
+<h3>Intro</h3>
+<p>I was playing around generating fractals in R when I realized the monochromatic green Barnsely Fern I had on my screen didn’t quite look like the leaves I could see outside my window. It was already Fall. In this post I describe a technique to generate a Barnsley Fern with autumn foliage.</p>
+</div>
+<div id="the-barnsley-fern" class="section level3">
+<h3>The Barnsley Fern</h3>
+<p>First, we generate the Barnsley Fern.</p>
+<pre class="r"><code>#------------ Generate the Barnsely Fern ---------------
+
+# Define the coefficients to calculate the x,y values
+
+coef_names &lt;- list(NULL,c(&quot;x&quot;,&quot;y&quot;,&quot;z&quot;))
+
+coef_x &lt;- matrix(ncol = 3, byrow= TRUE, dimnames = coef_names,
+                   c(0, 0, 0,
+                     -0.15, 0.28, 0,
+                      0.2, -0.26, 0,
+                     0.85, 0.04, 0))
+
+coef_y &lt;- matrix(ncol = 3, byrow= TRUE, dimnames = coef_names,
+                   c(0, 0.16, 0,
+                     0.26, 0.24, 0.44,
+                     0.23, 0.22, 1.6,
+                     -0.04, 0.85, 1.6))
+
+# Indicate the percentage of iterations through each row of the coefficients
+coef_ctrl &lt;- c(1,7,14,85)
+
+# initialize a list to collect the generated points
+points &lt;- list()
+points$x &lt;- 0
+points$y &lt;- 0
+
+# Set maximum iterations and reset coefficient tracker
+max_i&lt;-1000000
+coef &lt;- NA
+
+# Generate the x,y points as a list and combine as a dataframe
+for (i in 2:(max_i)) {
+    rand = runif(1, 0, 100)
+    
+    if (rand &lt; coef_ctrl[1]){coef &lt;- 1} 
+    else if (rand &lt; coef_ctrl[2]){coef &lt;- 2}
+    else if (rand &lt; coef_ctrl[3]){coef &lt;- 3}
+    else {coef &lt;- 4}
+    
+    points$x[i] &lt;- points$x[i-1]*coef_x[coef, 1] + points$y[i-1]*coef_x[coef, 2] + coef_x[coef, 3]
+    points$y[i] &lt;- points$x[i-1]*coef_y[coef, 1] + points$y[i-1]*coef_y[coef, 2] + coef_y[coef, 3]
+}
+
+df &lt;- bind_rows(points)</code></pre>
+<p>We can plot the fern and to color it green is straight forward. We now have a Summer Barnsley Fern.</p>
+<pre class="r"><code># Checkout your Summer Barnsley Fern
+plot(df$x, df$y, pch = &#39;.&#39;, col = &quot;forestgreen&quot;, xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, xlab = NA, ylab = NA,
+     main= &quot;Summer Barnsley Fern&quot;)</code></pre>
+<p><img src="/post/2019-10-13-autumn-barnsley-fern_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Now we consider the objective of coloring the leaf such that it reflects the patterns we see in the autumn. The edges of a leaf will usually change colors first so we want to have the red and organge tints on the sides of the leaf and yellow and green tints in the mid section along the stem. The leaf also tapers from bottom to tip and as the leaf thins at the top we expect more red and organge tints and less of the green.</p>
+<p>To accomplish this, we color the fern in a way that is symmetrical and thus will base the color on the distance each x is from the mean of x coordinates. Because the fern curves as y increases we need to shift the colors to the right to follow the curve. This is accomplished by binning the y coordinates and calculating the mean of the x coordinates for each y bin.</p>
+<pre class="r"><code>df$ybin &lt;- signif(df$y,2)
+
+df &lt;- df[-1,] %&gt;% 
+    group_by(ybin) %&gt;% 
+    mutate(sd = sd(x), mean = mean(x))  %&gt;% 
+    ungroup() %&gt;% 
+    mutate(xdev = abs(mean -x)/sd)
+
+df[is.na(df$xdev),]$xdev &lt;- 0</code></pre>
+<p>Because the fern also narrows at the top, we want to use proportionally more of the colors we use for the edges (farthest from the mean). Thus, we will factor in the value of y along with the x distance from the mean to determine the color for the point.</p>
+<p>A histogram can help determine what break points to use for the colors.</p>
+<pre class="r"><code>#not run
+#hist(df$xdev + (df$y/10))</code></pre>
+<p>We define our autumn color schematic and generate the Autumn Barnsley Fern.</p>
+<pre class="r"><code># Set the breakpoints and the colors
+color_table &lt;- tibble( value = c(0.5, 0.8, 1.1, 1.5, 1.9, 2.1, 2.3, max(df$xdev + (df$y/10))),
+                           color = c(&quot;forestgreen&quot;, &quot;yellowgreen&quot;, &quot;yellow3&quot;, &quot;gold2&quot;,
+                                     &quot;darkgoldenrod2&quot;, &quot;darkorange3&quot;, &quot;darkorange4&quot;, &quot;brown4&quot;))
+
+# Lookup the corresponding color for each of the points.
+df$col &lt;- NA
+
+for (r in 1:nrow(color_table) ){
+    df$col[df$xdev + (df$y/10) &lt;= color_table$value[r] &amp; is.na(df$col)] &lt;- color_table$color[r]
+}
+
+
+plot(df$x, df$y, pch = &#39;.&#39;, col = df$col,xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, xlab = NA, ylab = NA,
+     main = &quot;Autumn Barnsley Fern&quot;)</code></pre>
+<p><img src="/post/2019-10-13-autumn-barnsley-fern_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="/2019/08/23/exploration-of-3d-fractals/">&laquo; Exploration of 3D Fractals</a>
+    
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '.Site.explorations-in-r';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+  <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "explorations-in-r" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+</body>
+</html>
+
