@@ -122,3 +122,6 @@ shape(3)
 ```
 
 
+```{r pressure, echo=FALSE, fig.cap="Example Screen Shot", out.width = '100%'}
+knitr::include_graphics("./static/post/2019-08-23-exploration-of-3d-fractals_files/ScreenShot.png")
+```

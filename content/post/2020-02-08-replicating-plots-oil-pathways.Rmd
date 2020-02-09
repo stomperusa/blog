@@ -2,6 +2,7 @@
 title: 'Replicating Plots:  Oil Pathways'
 author: "Stomperusa"
 date: '2020-02-08'
+output: word_document
 slug: replicating-plots-oil-pathways
 tags: TidyTuesday
 categories: R
