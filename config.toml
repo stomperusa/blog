@@ -19,6 +19,7 @@ rssLimit = 1
 [params]
   sitename = "exploRations in R"
 
+
 [permalinks]
     post = "/:year/:month/:day/:slug/"
 
