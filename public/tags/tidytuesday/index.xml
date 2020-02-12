@@ -78,7 +78,7 @@ library(here)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;I used rnaturalearth for the map. The original may be based on another map projection given the orientation differences apparent at the top of the graphic, around Greenland for example.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;world &amp;lt;- ne_countries(scale = &amp;quot;medium&amp;quot;, returnclass = &amp;quot;sf&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;The geom_curve was a new discovery for me as well. How to get the pinhole effect and the shading around the borders eludes me. Reach out if you know how to resolve.&lt;/p&gt;
-&lt;p&gt;Here’s is my stab at reproducing the graphic. Obviously there is a bit more fine tuning I could do to get it closer to the original, but I got what I wanted out of the exercise.&lt;/p&gt;
+&lt;p&gt;Here is my stab at reproducing the graphic. Obviously there is a bit more fine tuning I could do to get it closer to the original, but I got what I wanted out of the exercise.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot &amp;lt;- ggplot(data = world) +
     geom_sf(fill = &amp;quot;blue&amp;quot;, color = &amp;quot;black&amp;quot;, size = 0.2) +
     geom_sf(data = subset(world, geounit == &amp;quot;Iran&amp;quot;), fill = &amp;quot;red&amp;quot;, color = &amp;quot;black&amp;quot;, size = 0.2) +
