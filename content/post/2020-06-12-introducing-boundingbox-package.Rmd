@@ -53,8 +53,10 @@ When an image appears, use the left mouse button to select a point, and the righ
 
 Here is a screen shot of the first image with several points selected. 
 
-```{r, echo = FALSE, out.width = "500px"}
-knitr::include_graphics("boundingbox_files/README-input-1.jpg")
+#```{r, echo = FALSE, out.width = "500px"}
+```{r, echo=FALSE}
+#knitr::include_graphics("boundingbox_files/README-input-1.jpg")
+![input1]("boundingbox_files/README-input-1.jpg")
 ```
 
 
