@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <title>
+    
+    
+     R Visualizations for Supplier Risk Management nth Parties 
+    
+  </title>
+  <link rel="canonical" href="/2019/05/02/r-visualizations-for-supplier-risk-management-nth-parties/">
+
+  <link rel="stylesheet" href="/css/fonts.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="/">exploRations in R</a></h1>
+  <ul>
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://github.com/stomperusa">GitHub</a></li>
+    
+    <li><a href="/post/index.xml">RSS</a></li>
+    
+    <li><a href="https://www.r-bloggers.com">Rbloggers</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> R Visualizations for Supplier Risk Management nth Parties </h1>
+
+  <div id=sub-header>
+    stomperusa · 2019/05/02 · 7 minute read
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<pre class="r"><code>library(tidyverse)
+library(readr)
+library(ggplot2)
+library(igraph)
+library(ggraph)
+library(viridisLite)
+library(RColorBrewer)</code></pre>
+<pre class="r"><code>imported_data &lt;- read_csv(&quot;VendorData.csv&quot;)
+df &lt;- imported_data</code></pre>
+<div id="intro" class="section level3">
+<h3>Intro</h3>
+<p>Visualization is key when you are looking for the story in the data. This holds true particularly for high volume complex data sets, such as the data a firm might compile as part of its supplier risk management program. I am a strong proponent of the use of R for data analytics of this type. Not only is R free, it is easy to learn, has an amazingly helpful and friendly user community, and the visualizations you can make with libraries such as ggplot2 are highly customizable. My favorite stand alone visualization tool is by far Tableau. I was forced to use R when I didn’t have access to Tableau and I learned to make every visualization I had previously made in Tableau in R, and then some. The key thing is that in R, you can integrate your data manipulation and your graphics in one set of code. For example, you can run a predictive model behind your visualiation in R; something you cannot do in Tableau. It is a rare case that you wouldn’t have to prep your data before pulling it into Tableau.</p>
+<p>In this article, and a few more that will follow, I intend to demonstrate some visualizations geared toward third party supplier risk management. There are some vexing issues, particularly in the financial services industry within which I work, such as how to identify supply chain risks, or risks across nth suppliers as it is often framed. Here I will introduce network diagrams as a tool to identify hidden dependencies that may warrant more in depth risk analysis.</p>
+<p>We start with a truncated version of a mock supplier inventory. Each row represents a single service relationship between a supplier and a specific business unit of the company. The business unit is denoted by B# and the supplier by V#. There are two fields, Sub1 and Sub2, that capture other suppliers to whom the main supplier subcontracts. The criticality of the service is captured on a 1 to 4 scale with 4 being considered business critical and a 1 the least critical. If you look hard enough at this data you may be able to spot some key dependencies, but even with just 10 records on the screen, it is not an easy task. You may have a dozen business units and hundreds, if not thousands of supplier relationships.</p>
+<pre class="r"><code>rbind(head(df, 5),tail(df,5))</code></pre>
+<pre><code>## # A tibble: 10 x 6
+##       ID BU    Supplier Sub1  Sub2  Criticality
+##    &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt;
+##  1     1 B1    V01      V22   V33             1
+##  2     2 B1    V02      V23   V12             2
+##  3     3 B1    V03      V24   V19             2
+##  4     4 B1    V04      V01   V12             4
+##  5     5 B1    V05      V14   V30             1
+##  6    16 B3    V11      V19   V26             2
+##  7    17 B4    V05      V20   V17             1
+##  8    18 B4    V04      V01   V12             4
+##  9    19 B4    V09      V16   &lt;NA&gt;            2
+## 10    20 B4    V07      V01   V12             3</code></pre>
+<p>The first step in preparing the data for a network diagram is to extract the relationship pairs into a new table. Here we define two types of relationship, Direct which is between a business unit and a supplier, and Subcontract which is between a Direct supplier and another supplier found in the Sub1 or Sub2 fields. For example, the first row would generate three pairs, one Direct pair between B1 and V01, and then two Subcontractor pairs between V01 and V22, and V01 and V33. Such a table that also preserves the criticality based on the associated Direct relationship may look like this:</p>
+<pre class="r"><code>df01 &lt;- df[,c(&quot;Supplier&quot;, &quot;BU&quot;, &quot;Criticality&quot;)]
+df01$Type &lt;- &quot;Direct&quot;
+names(df01) &lt;- c(&quot;from&quot;, &quot;to&quot;, &quot;Criticality&quot;, &quot;Type&quot;)
+
+df02 &lt;- df[,c(&quot;Sub1&quot;, &quot;Supplier&quot;, &quot;Criticality&quot;)]
+df02$Type &lt;- &quot;Subcontract&quot;
+names(df02) &lt;- c(&quot;from&quot;, &quot;to&quot;, &quot;Criticality&quot;, &quot;Type&quot;)
+
+df03 &lt;- df[,c(&quot;Sub2&quot;, &quot;Supplier&quot;, &quot;Criticality&quot;)]
+df03$Type &lt;- &quot;Subcontract&quot;
+names(df03) &lt;- c(&quot;from&quot;, &quot;to&quot;, &quot;Criticality&quot;, &quot;Type&quot;)
+
+df1 &lt;- rbind(df01, df02, df03)
+df1 &lt;- df1[complete.cases(df1),]
+
+rbind(head(df1, 5),tail(df1,5))</code></pre>
+<pre><code>## # A tibble: 10 x 4
+##    from  to    Criticality Type       
+##    &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt;      
+##  1 V01   B1              1 Direct     
+##  2 V02   B1              2 Direct     
+##  3 V03   B1              2 Direct     
+##  4 V04   B1              4 Direct     
+##  5 V05   B1              1 Direct     
+##  6 V12   V04             4 Subcontract
+##  7 V26   V11             2 Subcontract
+##  8 V17   V05             1 Subcontract
+##  9 V12   V04             4 Subcontract
+## 10 V12   V07             3 Subcontract</code></pre>
+<p>Note that the “from” and “to” columns denote the direction of the service. Once we have these relationships defined, we can generate the network diagram. First, we will just look at the Direct relationships.</p>
+<pre class="r"><code>vert1 &lt;- data.frame(unique(df1[df1$Type == &quot;Direct&quot;,1]))   #Business
+vert2 &lt;- data.frame(unique(df1[df1$Type == &quot;Direct&quot;,2]))   #Supplier
+names(vert1) &lt;- &quot;vert&quot;
+names(vert2) &lt;- &quot;vert&quot;
+vert &lt;- unique(rbind(vert1, vert2))
+
+rel &lt;- df1[df1$Type == &quot;Direct&quot;,1:3]
+names(rel) &lt;- c(&quot;from&quot;, &quot;to&quot;, &quot;Criticality&quot;)
+
+g1 &lt;- graph_from_data_frame(rel, vertices = vert)
+
+V(g1)$family &lt;- ifelse(V(g1)$name %in% vert1$vert, &quot;Business Unit&quot;, &quot;Vendor&quot;)
+
+ggraph(g1, layout = &quot;linear&quot;, circular = TRUE) +
+    geom_edge_link(aes(alpha = Criticality), edge_width = 2, edge_color = &quot;steelblue&quot;) +
+    geom_node_point(color = &quot;steelblue&quot;, shape = 16, size  = 3) +
+    geom_node_text(aes(label = name, color = family), repel = TRUE,
+        point.padding = unit(0.2, &quot;lines&quot;), show.legend = FALSE, fontface = &quot;bold&quot;) +
+    scale_color_brewer(type = &quot;qual&quot;, palette = &quot;Dark2&quot;) +
+    guides(size = FALSE) +
+    labs(title = &quot;Network of Vendor Relationships per Business Unit&quot;) +
+    theme_void() +
+    theme(legend.position = &quot;bottom&quot;, plot.title = element_text(face = &quot;bold&quot;))</code></pre>
+<p><img src="/post/2019-05-02-r-visualizations-for-supplier-risk-management-nth-parties_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>This graphic captures the network of vendor relationships per business unit. The intensity of the line signifies the criticality of the service. There are some vendors that service only one or two of the business units and these would appear to be low criticality. The most critical services would appear to be concentrated across the businesses with Vendor 4, followed by Vendor 7. Often, the level of due diligence applied to the service relationship will be driven by the criticality of the service. We can assume then for the sake of this exercise that the level of due diligence applied to Vendor 1 is low because it directly supports only one business unit for a non-critical service. Next we look at what dependencies may be hidden in the supply chain.</p>
+<pre class="r"><code>target &lt;- &quot;V01&quot;
+set1 &lt;- df1[df1$from == target,]
+set2 &lt;- df1[df1$from %in% set1$to,]
+
+dft &lt;-rbind(set1, set2)
+
+vert3 &lt;- data.frame(unique(dft[dft$Type == &quot;Direct&quot;,1]))   #Business
+vert4 &lt;- data.frame(unique(dft[dft$Type == &quot;Sub&quot;,1]))   #Supplier with Subcontractor
+vert5 &lt;- data.frame(unique(dft[,2]))   #Supplier/Subcontractor
+
+names(vert3) &lt;- &quot;vert&quot;
+names(vert4) &lt;- &quot;vert&quot;
+names(vert5) &lt;- &quot;vert&quot;
+vertt &lt;- unique(rbind(vert3, vert4, vert5))
+
+relt &lt;- dft[,1:4]
+names(relt) &lt;- c(&quot;from&quot;, &quot;to&quot;, &quot;Criticality&quot;, &quot;Type&quot;)
+
+g2 &lt;- graph_from_data_frame(relt, vertices = vertt)
+
+V(g2)$family &lt;- ifelse(V(g2)$name %in% vert3$vert, &quot;Business Unit&quot;, &quot;Vendor&quot;)
+V(g2)$family[V(g2)$name == target] &lt;- &quot;Target&quot;
+
+
+ggraph(g2, layout = &quot;linear&quot;, circular = TRUE) +
+    geom_edge_link(aes(edge_width = Criticality, edge_color = Type)) +
+    geom_node_point(color = &quot;steelblue&quot;, shape = 16, size  = 5) +
+    geom_node_text(aes(label = name, color = family), repel = TRUE,
+        point.padding = unit(0.2, &quot;lines&quot;), show.legend = FALSE, fontface = &quot;bold&quot;) +
+    scale_color_brewer(type = &quot;qual&quot;, palette = &quot;Dark2&quot;) +
+    scale_edge_color_manual(values = c(&quot;gold3&quot;, &quot;medium purple&quot;)) +
+    guides(size = FALSE) +
+    labs(title = paste0(&quot;Network of Vendor Relationships per Business Unit with Dependency on &quot;,target))+
+    theme_void() +
+    theme(legend.position = &quot;bottom&quot;, plot.title = element_text(face = &quot;bold&quot;))</code></pre>
+<p><img src="/post/2019-05-02-r-visualizations-for-supplier-risk-management-nth-parties_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>We want to understand where there are subcontractor dependencies in the supply chain. We focus on Vendor 1. First we filter for all direct relationships with Vendor 1, all subcontractor relationships with Vendor 1, and all relationships with those vendors that subcontract to Vendor 1. I’ve changed the graphic up a bit. Now instead of using the line intensity to indicate Criticality, I have used the line thickness. I have color coded the lines to indicate whether the relationship is Direct or Subcontract. Here we can see, as we noted in the earlier graph, there is only one non-critical Direct business unit relationship with Vendor 1. However, now you should also be able to identify that Vendor 4 and Vendor 7 subcontract to Vendor 1 in relation to critical services that impact all or most all of the business units. It is thus apparent that the dependency on Vendor 1 is much greater than understaood if just looking at the direct relationships and suggest that more due diligence on Vendor 1 may be warranted. This same type of analysis can be used to indentify dependencies on vendors where there is no direct relationship at all, or dependencies deeper in the supply chain itself.</p>
+<p>Visualizations such as Network Diagrams can help us identify patterns in the data that we may otherwise not notice. In this instance we surface a risk exposure we may otherwise not have anticipated.</p>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="/2019/04/23/revisiting-weather-impact-on-uber-pickups-in-nyc/">&laquo; Revisiting Weather Impact on Uber Pickups in NYC</a>
+    
+    
+      <a class="basic-alignment left" href="/2019/05/04/r-visualizations-for-supplier-risk-management-nth-parties/">R Visualizations for Supplier Risk Management nth Parties &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '.Site.explorations-in-r';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+  <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "explorations-in-r" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+</body>
+</html>
+
