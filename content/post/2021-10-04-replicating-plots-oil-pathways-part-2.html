@@ -1,0 +1,90 @@
+---
+title: 'Replicating Plots:  Oil Pathways Part 2'
+author: stomperusa
+date: '2021-10-04'
+slug: replicating-plots-oil-pathways-part-2
+categories:
+  - R
+tags: [visualization]
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="intro" class="section level3">
+<h3>Intro</h3>
+<p>Early last year I posted on my blog an attempt to recreate a Yahoo Finance graphic. Now, thanks to the work of Dr Paul Murrell on the <strong>grid</strong> and <strong>gggrid</strong> packages, I have the tools to polish this one off. <a href="https://developer.r-project.org/Blog/public/2020/07/15/new-features-in-the-r-graphics-engine/" title="New Features in the R Graphics Engine">Reference Article</a></p>
+<p>Here is a streamlined version of my earlier post, and the graphic enhanced by the radial gradient feature.</p>
+</div>
+<div id="my-attempt-to-replicate" class="section level3">
+<h3>My attempt to replicate</h3>
+<p><img src="oil_pathways_files/README-replica.png" width="500px" /></p>
+</div>
+<div id="the-original-file" class="section level3">
+<h3>The original file</h3>
+<p><img src="oil_pathways_files/README-original.png" width="500px" /></p>
+<p><a href="https://finance.yahoo.com/news/what-us-iran-tensions-could-mean-for-oil-prices-193905568.html?guccounter=1&amp;guce_referrer=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8&amp;guce_referrer_sig=AQAAADp4Vt8w3NAGpqbj8B0Lj3oLzHjF-R9YqWXZKXiKiabBmEv_8GNYKJeLGytcLIHL1fLnn9Rv886i_Vr07iqAUu4fuZrpm-5goU7ulysC0QjUSEUxWfs1Ax_zinvN3DezuR3zAsWmwSClEXkSGXu9_d-wmCe22K4GKnRjQq7_1d3p" title="What US-Iran Tensions Could Mean for Oil Prices">Source Article</a></p>
+</div>
+<div id="required-packages" class="section level3">
+<h3>Required Packages</h3>
+<pre class="r"><code>library(tidyverse)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggtext)
+library(grid)
+library(gggrid)</code></pre>
+</div>
+<div id="the-data" class="section level3">
+<h3>The Data</h3>
+<p>Will cut right to the chase this time. Here are the data elements we need for the map and the points on the map.</p>
+<pre class="r"><code>world &lt;- ne_countries(scale = &quot;medium&quot;, returnclass = &quot;sf&quot;)
+
+data &lt;- data.frame(Location = c(&quot;Strait of Hormuz&quot;, &quot;Strait of Malacca&quot;, 
+                                 &quot;Suez Canal and SUMED Pipeline&quot;, &quot;Bab el-Mandeb&quot;, &quot;Danish Straits&quot;, 
+                                 &quot;Bosporus&quot;, &quot;Panama Canal&quot;, &quot;Cape of Good Hope&quot;), 
+                    Barrels = c(18.5,16, 5.5, 4.8, 3.2, 2.4, 0.9, 5.8), 
+                    Lat = c(26.5667, 1.43, 30.455, 12.5833, 56, 40.7225, 9.38743, -34.3548), 
+                    Lon = c(56.25, 102.89, 32.35, 43.3333, 11, 28.2247, -79.91863, 18.4698))</code></pre>
+</div>
+<div id="the-graph" class="section level3">
+<h3>The Graph</h3>
+<p>Note the limitations on the graphic devices that can be used. Here I will use <strong>cairo_ps</strong> to save the output locally as a postscript file. The additions to achieve the radial gradient are <strong>grid::radialGradient()</strong> and <strong>gggrid::grid_panel()</strong>.</p>
+<pre class="r"><code># Not Run
+
+#cairo_ps(filename  = &quot;plot2.ps&quot;)
+
+#grad &lt;- radialGradient(c(&quot;transparent&quot;, &quot;black&quot;), r2=.6,  stops = c(.45, 1), extend = &quot;pad&quot;)
+
+#title &lt;- &quot;&lt;b style=&#39;color:#FF0000&#39;&gt;IRAN&lt;/b&gt; &lt;b style=&#39;color:#FFFFFF&#39;&gt;BORDERS&lt;br&gt; KEY OIL PATHWAY&lt;/b&gt;&quot;
+
+#ggplot(data = world) +
+#    geom_sf(fill = &quot;#2B47E3&quot;, color = &quot;black&quot;, size = 0.2) +
+    
+#    grid_panel(rectGrob(gp=gpar(fill=grad))) +
+    
+#    geom_sf(data = subset(world, geounit == &quot;Iran&quot;), fill = &quot;red&quot;, color = &quot;black&quot;, size = 0.2) +
+#    geom_point(data = data, aes(x =Lon, y=Lat, size = Barrels), 
+#               shape = 21, fill = &quot;goldenrod2&quot;, color = &quot;white&quot;, show.legend = F) +
+#    geom_text(data = data, aes(x =Lon, y=Lat, label = Location), color = &quot;white&quot;, size = 3.5,
+#              vjust = c(-1, -1, -1, -1, -1, -1, -1.8, -1), hjust = c(-0.25, 1.25, 1.1, 1.2, -0.18, -0.27, -0.14, 1.2), 
+#              fontface = &quot;bold&quot;) +
+#    geom_text(data = data, aes(x =Lon, y=Lat, label = Barrels), color = &quot;goldenrod2&quot;, size = 3.5,
+#              vjust = c(.5, .5, .5, .5, .5, .5, -.5, .5), hjust = c(-1.0, 2.7, 2.0, 2.0, -1.0, -1.0, -0.6, 2.1),
+#              fontface = &quot;bold&quot;) +
+#    scale_size_continuous(range = c(3, 15)) +
+#    annotate(&quot;text&quot;, x = -95, y = 60, label = &quot;MILLION BARRELS\nOF OIL MOVED PER\nDAY, 2016 DATA&quot;, size = 4.0,
+#             color = &quot;goldenrod2&quot;, fontface= &quot;bold&quot;, hjust = 0, lineheight = 1) +
+#    annotate(&quot;text&quot;, x = -45, y = -50, label = &quot;SOURCE U.S. ENERGY INFORMATION ADMINISTRATION&quot;, size = 3.0,
+#             color = &quot;white&quot;)+
+#    geom_richtext(x = 10, y = 80, label = title, size = 9, fill = NA, label.color = NA, lineheight = 0.33) +
+#    geom_curve(aes(x = 70, y = 82, xend = 65, yend = 38), color = &quot;red&quot;, arrow = arrow(type = &quot;open&quot;,
+#              length = unit(0.15, &quot;inches&quot;)), curvature = -0.75, angle = 100, ncp =10) + 
+#    theme(panel.background = element_rect(fill = &quot;black&quot;),
+#          panel.grid = element_blank(), axis.title = element_blank(), axis.ticks = element_blank(),
+#          axis.text = element_blank(), aspect.ratio = 1) +
+#    xlim(-95.00, 110.00) +
+#    ylim(-55, 90)
+
+#dev.off()</code></pre>
+</div>
