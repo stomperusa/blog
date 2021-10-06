@@ -1,6 +1,8 @@
 ---
 title: 'Replicating Plots:  Oil Pathways Part 2'
 author: stomperusa
+output:
+    html_document
 date: '2021-10-04'
 slug: replicating-plots-oil-pathways-part-2
 categories:
@@ -18,11 +20,11 @@ tags: [visualization]
 </div>
 <div id="my-attempt-to-replicate" class="section level3">
 <h3>My attempt to replicate</h3>
-<p><img src="oil_pathways_files/README-replica.jpg" width="500px" /></p>
+<p><img src="README-replica.jpg" width="500px" /></p>
 </div>
 <div id="the-original-file" class="section level3">
 <h3>The original file</h3>
-<p><img src="oil_pathways_files/README-original.jpg" width="500px" /></p>
+<p><img src="README-original.jpg" width="500px" /></p>
 <p><a href="https://finance.yahoo.com/news/what-us-iran-tensions-could-mean-for-oil-prices-193905568.html?guccounter=1&amp;guce_referrer=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8&amp;guce_referrer_sig=AQAAADp4Vt8w3NAGpqbj8B0Lj3oLzHjF-R9YqWXZKXiKiabBmEv_8GNYKJeLGytcLIHL1fLnn9Rv886i_Vr07iqAUu4fuZrpm-5goU7ulysC0QjUSEUxWfs1Ax_zinvN3DezuR3zAsWmwSClEXkSGXu9_d-wmCe22K4GKnRjQq7_1d3p" title="What US-Iran Tensions Could Mean for Oil Prices">Source Article</a></p>
 </div>
 <div id="required-packages" class="section level3">
@@ -39,7 +41,6 @@ library(gggrid)</code></pre>
 <h3>The Data</h3>
 <p>Will cut right to the chase this time. Here are the data elements we need for the map and the points on the map.</p>
 <pre class="r"><code>world &lt;- ne_countries(scale = &quot;medium&quot;, returnclass = &quot;sf&quot;)
-
 data &lt;- data.frame(Location = c(&quot;Strait of Hormuz&quot;, &quot;Strait of Malacca&quot;, 
                                  &quot;Suez Canal and SUMED Pipeline&quot;, &quot;Bab el-Mandeb&quot;, &quot;Danish Straits&quot;, 
                                  &quot;Bosporus&quot;, &quot;Panama Canal&quot;, &quot;Cape of Good Hope&quot;), 
@@ -51,13 +52,9 @@ data &lt;- data.frame(Location = c(&quot;Strait of Hormuz&quot;, &quot;Strait of
 <h3>The Graph</h3>
 <p>Note the limitations on the graphic devices that can be used. Here I will use <strong>cairo_ps</strong> to save the output locally as a postscript file. The additions to achieve the radial gradient are <strong>grid::radialGradient()</strong> and <strong>gggrid::grid_panel()</strong>.</p>
 <pre class="r"><code># Not Run
-
 #cairo_ps(filename  = &quot;plot2.ps&quot;)
-
 #grad &lt;- radialGradient(c(&quot;transparent&quot;, &quot;black&quot;), r2=.6,  stops = c(.45, 1), extend = &quot;pad&quot;)
-
 #title &lt;- &quot;&lt;b style=&#39;color:#FF0000&#39;&gt;IRAN&lt;/b&gt; &lt;b style=&#39;color:#FFFFFF&#39;&gt;BORDERS&lt;br&gt; KEY OIL PATHWAY&lt;/b&gt;&quot;
-
 #ggplot(data = world) +
 #    geom_sf(fill = &quot;#2B47E3&quot;, color = &quot;black&quot;, size = 0.2) +
     
@@ -85,6 +82,5 @@ data &lt;- data.frame(Location = c(&quot;Strait of Hormuz&quot;, &quot;Strait of
 #          axis.text = element_blank(), aspect.ratio = 1) +
 #    xlim(-95.00, 110.00) +
 #    ylim(-55, 90)
-
 #dev.off()</code></pre>
 </div>
