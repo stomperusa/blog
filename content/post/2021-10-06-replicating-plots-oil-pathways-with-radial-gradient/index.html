@@ -19,7 +19,7 @@ tags:
 </div>
 <div id="my-attempt-to-replicate" class="section level3">
 <h3>My attempt to replicate</h3>
-<p><img src="README-replica.jpg" width="500px" /></p>
+<p><img src="README-replica2.jpg" width="500px" /></p>
 </div>
 <div id="the-original-file" class="section level3">
 <h3>The original file</h3>
@@ -52,7 +52,7 @@ data &lt;- data.frame(Location = c(&quot;Strait of Hormuz&quot;, &quot;Strait of
 <p>Note the limitations on the graphic devices that can be used. Here I will use <strong>cairo_ps</strong> to save the output locally as a postscript file. The additions to achieve the radial gradient are <strong>grid::radialGradient()</strong> and <strong>gggrid::grid_panel()</strong>.</p>
 <pre class="r"><code># Not Run
 #cairo_ps(filename  = &quot;plot2.ps&quot;)
-#grad &lt;- radialGradient(c(&quot;transparent&quot;, &quot;black&quot;), r2=.6,  stops = c(.45, 1), extend = &quot;pad&quot;)
+#grad &lt;- radialGradient(c(rgb(0,0,0,0), &quot;black&quot;), r2=.6,  stops = c(.45, 1), extend = &quot;pad&quot;)
 #title &lt;- &quot;&lt;b style=&#39;color:#FF0000&#39;&gt;IRAN&lt;/b&gt; &lt;b style=&#39;color:#FFFFFF&#39;&gt;BORDERS&lt;br&gt; KEY OIL PATHWAY&lt;/b&gt;&quot;
 #ggplot(data = world) +
 #    geom_sf(fill = &quot;#2B47E3&quot;, color = &quot;black&quot;, size = 0.2) +

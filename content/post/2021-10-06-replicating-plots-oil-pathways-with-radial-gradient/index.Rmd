@@ -18,7 +18,7 @@ Here is a streamlined version of my earlier post, and the graphic enhanced by th
 ### My attempt to replicate
 
 ```{r, echo = FALSE, out.width = "500px"}
-knitr::include_graphics("README-replica.jpg")
+knitr::include_graphics("README-replica2.jpg")
 ```
 
 
@@ -61,7 +61,7 @@ Note the limitations on the graphic devices that can be used. Here I will use **
 ```{r message=FALSE, echo=TRUE}
 # Not Run
 #cairo_ps(filename  = "plot2.ps")
-#grad <- radialGradient(c("transparent", "black"), r2=.6,  stops = c(.45, 1), extend = "pad")
+#grad <- radialGradient(c(rgb(0,0,0,0), "black"), r2=.6,  stops = c(.45, 1), extend = "pad")
 #title <- "<b style='color:#FF0000'>IRAN</b> <b style='color:#FFFFFF'>BORDERS<br> KEY OIL PATHWAY</b>"
 #ggplot(data = world) +
 #    geom_sf(fill = "#2B47E3", color = "black", size = 0.2) +
