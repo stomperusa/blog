@@ -12,7 +12,7 @@ disable_mathjax = false
 pygmentsstyle      = "vs"
 pygmentscodefences = true
 
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$","\\.knit\\.md$", "\\.utf8\\.md$"]
 
 rssLimit = 1
 

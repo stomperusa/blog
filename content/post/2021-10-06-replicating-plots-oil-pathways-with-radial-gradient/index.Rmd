@@ -1,14 +1,14 @@
 ---
-title: 'Replicating Plots:  Oil Pathways Part 2'
-author: stomperusa
-output:
-    html_document
-date: '2021-10-04'
-slug: replicating-plots-oil-pathways-part-2
+title: 'Replicating Plots:  Oil Pathways with Radial Gradient'
+author: R package build
+date: '2021-10-06'
+slug: replicating-plots-oil-pathways-with-radial-gradient
 categories:
   - R
-tags: [visualization]
+tags:
+  - visualization
 ---
+
 
 ### Intro
 Early last year I posted on my blog an attempt to recreate a Yahoo Finance graphic. Now, thanks to the work of Dr Paul Murrell on the **grid** and **gggrid** packages, I have the tools to polish this one off.  [Reference Article](https://developer.r-project.org/Blog/public/2020/07/15/new-features-in-the-r-graphics-engine/ "New Features in the R Graphics Engine")
