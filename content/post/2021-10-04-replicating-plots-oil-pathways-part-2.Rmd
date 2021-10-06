@@ -17,14 +17,14 @@ Here is a streamlined version of my earlier post, and the graphic enhanced by th
 ### My attempt to replicate
 
 ```{r, echo = FALSE, out.width = "500px"}
-knitr::include_graphics("oil_pathways_files/README-replica.png")
+knitr::include_graphics("oil_pathways_files/README-replica.jpg")
 ```
 
 
 ### The original file
 
 ```{r, echo = FALSE, out.width = "500px"}
-knitr::include_graphics("oil_pathways_files/README-original.png")
+knitr::include_graphics("oil_pathways_files/README-original.jpg")
 ```
 
 [Source Article](https://finance.yahoo.com/news/what-us-iran-tensions-could-mean-for-oil-prices-193905568.html?guccounter=1&guce_referrer=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8&guce_referrer_sig=AQAAADp4Vt8w3NAGpqbj8B0Lj3oLzHjF-R9YqWXZKXiKiabBmEv_8GNYKJeLGytcLIHL1fLnn9Rv886i_Vr07iqAUu4fuZrpm-5goU7ulysC0QjUSEUxWfs1Ax_zinvN3DezuR3zAsWmwSClEXkSGXu9_d-wmCe22K4GKnRjQq7_1d3p "What US-Iran Tensions Could Mean for Oil Prices")
